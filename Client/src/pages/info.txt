@@ -1,0 +1,571 @@
+import React, { useState, useEffect } from "react";
+import {
+  Typography,
+  FormControl,
+  Select,
+  MenuItem,
+  Button,
+  Grid,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Badge,
+  Checkbox,
+  Card,
+  IconButton,
+  Paper,
+  TextField,
+  Modal,
+  Tooltip,
+  Stack,
+  Skeleton,
+  Box,
+} from "@mui/material";
+import EmailIcon from "@mui/icons-material/Email";
+import SupportAgentIcon from "@mui/icons-material/SupportAgent";
+import CloseIcon from "@mui/icons-material/Close";
+import MicIcon from "@mui/icons-material/Mic";
+import ScreenShareIcon from "@mui/icons-material/ScreenShare";
+import SendIcon from "@mui/icons-material/Send";
+import MarkUnreadChatAltIcon from "@mui/icons-material/MarkUnreadChatAlt";
+import ChatIcon from "@mui/icons-material/Chat";
+import { io } from "socket.io-client";
+import {
+  fetchQuizCode,
+  fetchUserNamesByQuizCode,
+  insertMessage,
+  fetchMessagesByToUserName,
+} from "../Api";
+
+function Message() {
+  const [selected, setSelected] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState({});
+  const [currentMessage, setCurrentMessage] = useState("");
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [quizData, setQuizData] = useState([]);
+  const [userData, setUserData] = useState([]);
+  const [selectedQuizCode, setSelectedQuizCode] = useState("");
+  const [loadingQuizData, setLoadingQuizData] = useState(true);
+  const [loadingUserData, setLoadingUserData] = useState(false);
+  const [userType, setUserType] = useState("examiner");
+  const [studentData, setStudentData] = useState({
+    user_name: "exampleStudent",
+  });
+  const [unreadMessages, setUnreadMessages] = useState({});
+
+  const socket = io("http://localhost:8000");
+
+  useEffect(() => {
+    // Listen for incoming messages
+    socket.on("receiveMessage", (message) => {
+      if (message.from_user_name) {
+        setMessages((prevMessages) => ({
+          ...prevMessages,
+          [message.from_user_name]: [
+            ...(prevMessages[message.from_user_name] || []),
+            {
+              text: message.message_body,
+              sender: "other",
+              timestamp: new Date(message.created_on).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            },
+          ],
+        }));
+
+        // Update unread messages count for specific user
+        setUnreadMessages((prevCounts) => ({
+          ...prevCounts,
+          [message.from_user_name]:
+            (prevCounts[message.from_user_name] || 0) + 1,
+        }));
+      }
+    });
+
+    // Clean up the effect when the component unmounts
+    return () => {
+      socket.off("receiveMessage");
+    };
+  }, []);
+
+  useEffect(() => {
+    const getQuizData = async () => {
+      try {
+        const response = await fetchQuizCode();
+        setQuizData(response.data);
+      } catch (error) {
+        console.error("Failed to fetch quiz data", error);
+      } finally {
+        setLoadingQuizData(false);
+      }
+    };
+    getQuizData();
+  }, []);
+
+  useEffect(() => {
+    if (selectedQuizCode) {
+      setLoadingUserData(true);
+      const getUserData = async () => {
+        try {
+          const response = await fetchUserNamesByQuizCode(selectedQuizCode);
+          setUserData(response.data);
+        } catch (error) {
+          console.error("Failed to fetch user data", error);
+        } finally {
+          setLoadingUserData(false);
+        }
+      };
+      getUserData();
+    }
+  }, [selectedQuizCode]);
+
+  const handleSelectAll = () => {
+    if (selected.length === userData.length) {
+      setSelected([]);
+    } else {
+      setSelected(userData.map((user) => user.id));
+    }
+  };
+
+  const handleCheckboxChange = (id) => {
+    setSelected((prevSelected) =>
+      prevSelected.includes(id)
+        ? prevSelected.filter((item) => item !== id)
+        : [...prevSelected, id]
+    );
+  };
+
+  const handleOpen = async (user) => {
+    setSelectedUser(user);
+    setOpen(true);
+
+    try {
+      const receivedResponse = await fetchMessagesByToUserName(userType);
+      const sentResponse = await fetchMessagesByToUserName(user.user_name);
+
+      const rawSentMessages = sentResponse.data;
+      const rawReceivedMessages = receivedResponse.data;
+
+      const combinedMessages = [...rawSentMessages, ...rawReceivedMessages];
+
+      const allMessages = combinedMessages
+        .map((message) => {
+          const isSent =
+            message.from_user_name === userType &&
+            message.to_user_name === user.user_name;
+          const isReceived =
+            message.from_user_name === user.user_name &&
+            message.to_user_name === userType;
+
+          if (isSent || isReceived) {
+            return {
+              text: message.message_body,
+              sender: isSent ? "self" : "other",
+              timestamp: new Date(message.created_on).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            };
+          }
+          return null;
+        })
+        .filter((message) => message !== null);
+
+      setMessages((prevMessages) => ({
+        ...prevMessages,
+        [user.user_name]: allMessages,
+      }));
+
+      // Reset unread messages count when opening the chat
+      setUnreadMessages((prevCounts) => ({
+        ...prevCounts,
+        [user.user_name]: 0,
+      }));
+    } catch (error) {
+      console.error("Failed to fetch messages", error);
+    }
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setSelectedUser(null);
+  };
+
+  const style = {
+    position: "fixed",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: "50vw",
+    bgcolor: "background.paper",
+    boxShadow: 24,
+    p: 0,
+  };
+
+  const getCurrentTimestamp = () => {
+    const now = new Date();
+    return now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const handleSendMessage = async () => {
+    if (currentMessage.trim() !== "") {
+      const newMessage = {
+        text: currentMessage,
+        sender: "self",
+        timestamp: getCurrentTimestamp(),
+      };
+
+      // Add the new message to the state immediately
+      setMessages((prevMessages) => ({
+        ...prevMessages,
+        [selectedUser.user_name]: [
+          ...(prevMessages[selectedUser.user_name] || []),
+          newMessage,
+        ].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)),
+      }));
+      setCurrentMessage("");
+
+      try {
+        // Insert the message into the database
+        await insertMessage({
+          from_user_name: userType,
+          to_user_name: selectedUser.user_name,
+          quiz_code: selectedQuizCode,
+          message_body: currentMessage,
+          created_by: userType,
+          modified_by: userType,
+        });
+        console.log("Message inserted successfully");
+
+        // Fetch updated messages after sending a new message
+        const sentResponse = await fetchMessagesByToUserName(userType);
+        const sentMessages = sentResponse.data.map((message) => ({
+          text: message.message_body,
+          sender: message.from_user_name === userType ? "self" : "other",
+          timestamp: new Date(message.created_on).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        }));
+
+        const receivedResponse = await fetchMessagesByToUserName(
+          selectedUser.user_name
+        );
+        const receivedMessages = receivedResponse.data.map((message) => ({
+          text: message.message_body,
+          sender: message.from_user_name === userType ? "self" : "other",
+          timestamp: new Date(message.created_on).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        }));
+
+        const allMessages = [...sentMessages, ...receivedMessages].sort(
+          (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+        );
+
+        setMessages((prevMessages) => ({
+          ...prevMessages,
+          [selectedUser.user_name]: allMessages,
+        }));
+      } catch (error) {
+        console.error("Failed to insert message", error);
+      }
+    }
+  };
+
+  return (
+    <Card
+      sx={{
+        width: "80vw",
+        p: 2,
+        m: "auto",
+        boxShadow: "rgba(0, 0, 0, 0.24) 0px 3px 8px",
+        mt: 5,
+        borderRadius: 3,
+      }}
+    >
+      <Grid container sx={{ width: "90%" }}>
+        <Grid item xs={12}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              mb: 2,
+              justifyContent: "center",
+            }}
+          >
+            <Typography variant="h6" sx={{ mr: 2 }}>
+              Test:
+            </Typography>
+            <FormControl variant="outlined" sx={{ minWidth: 400, mr: 2 }}>
+              <Select
+                value={selectedQuizCode}
+                onChange={(e) => setSelectedQuizCode(e.target.value)}
+                displayEmpty
+              >
+                <MenuItem value="" disabled>
+                  Select
+                </MenuItem>
+                {loadingQuizData ? (
+                  <Skeleton variant="rectangular" width="100%" height={40} />
+                ) : (
+                  quizData.map((quiz) => (
+                    <MenuItem key={quiz.quiz_code} value={quiz.quiz_code}>
+                      {quiz.quiz_name}
+                    </MenuItem>
+                  ))
+                )}
+              </Select>
+            </FormControl>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleSelectAll}
+              sx={{ mr: 2 }}
+            >
+              {selected.length === userData.length && userData.length > 0
+                ? "Deselect All"
+                : "Select All"}
+            </Button>
+          </Box>
+          {loadingUserData ? (
+            <Skeleton variant="text" />
+          ) : (
+            <TableContainer component={Paper} sx={{ mt: 2 }}>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{backgroundColor:'#3b84bf'}}>
+                    <TableCell>
+                      <Checkbox
+                        checked={
+                          selected.length === userData.length &&
+                          userData.length > 0
+                        }
+                        onChange={handleSelectAll}
+                      />
+                    </TableCell>
+                    <TableCell sx={{color:'white',}}>User</TableCell>
+                    <TableCell sx={{color:'white',}}>Username</TableCell>
+                    <TableCell sx={{color:'white',}}>Action</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {userData.map((user) => (
+                    <TableRow key={user.user_name}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selected.includes(user.user_name)}
+                          onChange={() => handleCheckboxChange(user.user_name)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip
+                          title={unreadMessages[user.user_name] || 0}
+                          arrow
+                        >
+                          <Badge
+                            badgeContent={unreadMessages[user.user_name] || 0}
+                            color="error"
+                          >
+                            {user.user_name}
+                          </Badge>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip
+                          title={unreadMessages[user.user_name] || 0}
+                          arrow
+                        >
+                          <Badge
+                            badgeContent={unreadMessages[user.user_name] || 0}
+                            color="error"
+                          >
+                            {user.first_name}
+                          </Badge>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          onClick={() => handleOpen(user)}
+                          variant="contained"
+                          color="primary"
+                        >
+                          Chat
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Grid>
+        <Grid item xs={9}>
+          <Modal
+            open={open}
+            onClose={handleClose}
+            aria-labelledby="modal-title"
+            aria-describedby="modal-description"
+          >
+            <Box
+              sx={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                width: "60vw",
+                maxWidth: "600px",
+                bgcolor: "background.paper",
+                borderRadius: 2,
+                boxShadow: 24,
+                p: 2,
+              }}
+            >
+              <Card>
+                <Box
+                  sx={{
+                    backgroundColor: "primary.light",
+                    color: "whitesmoke",
+                    p: 2,
+                  }}
+                >
+                  <Grid
+                    container
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
+                    <Grid item>
+                      <SupportAgentIcon
+                        sx={{ verticalAlign: "middle", mr: 1 }}
+                      />
+                      <Typography variant="h6" component="span">
+                        Chat with {selectedUser?.first_name || "Student"}
+                      </Typography>
+                    </Grid>
+                    <Grid item>
+                      <Tooltip title="Close">
+                        <IconButton onClick={handleClose}>
+                          <CloseIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </Grid>
+                  </Grid>
+                </Box>
+                <Box
+                  sx={{
+                    height: "32vh",
+                    backgroundColor: "#E3F2FD",
+                    overflowY: "auto",
+                    p: 2,
+                  }}
+                >
+                  {selectedUser && messages[selectedUser.user_name] ? (
+                    messages[selectedUser.user_name].map((message, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems:
+                            message.sender === "self"
+                              ? "flex-end"
+                              : "flex-start",
+                          mb: 1,
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            backgroundColor:
+                              message.sender === "self" ? "#D1C4E9" : "#BBDEFB",
+                            color: "black",
+                            p: 1,
+                            borderBottomLeftRadius: "10px",
+                            borderBottomRightRadius: "11px",
+                            borderTopLeftRadius: "14px",
+                            maxWidth: "70%",
+                            fontFamily: "Poppins, sans-serif",
+                          }}
+                        >
+                          {message.text}
+                        </Box>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "gray",
+                            mt: 0.5,
+                            fontFamily: "Poppins, sans-serif",
+                          }}
+                        >
+                          {message.timestamp}
+                        </Typography>
+                      </Box>
+                    ))
+                  ) : (
+                    <Typography>No messages yet.</Typography>
+                  )}
+                </Box>
+                <Grid
+                  container
+                  spacing={2}
+                  sx={{ padding: "5px", alignItems: "center" }}
+                >
+                  <Grid item xs={9}>
+                    <TextField
+                      type="text"
+                      placeholder="Enter Your Message ....."
+                      value={currentMessage}
+                      onChange={(e) => setCurrentMessage(e.target.value)}
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={3}>
+                    <Stack
+                      direction="row"
+                      spacing={2}
+                      sx={{ justifyContent: "flex-end" }}
+                    >
+                      <Tooltip title="Mic">
+                        <IconButton>
+                          <MicIcon fontSize="medium" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Screen Share">
+                        <IconButton>
+                          <ScreenShareIcon fontSize="medium" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Send Message">
+                        <IconButton
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            backgroundColor: "primary.light",
+                            borderRadius: "50%",
+                          }}
+                          onClick={handleSendMessage}
+                        >
+                          <SendIcon fontSize="small" sx={{ color: "white" }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  </Grid>
+                </Grid>
+              </Card>
+            </Box>
+          </Modal>
+        </Grid>
+      </Grid>
+    </Card>
+  );
+}
+
+export default Message;
+----------------------------------------------------------------------------------
