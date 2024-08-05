@@ -21,11 +21,11 @@ const GET_USER_NAMES_BY_QUIZ_CODE_SQL = `
 
 let io;
 
-const setSocketIo = (socketIo) => {
+exports.setSocketIo = (socketIo) => {
     io = socketIo;
 };
 
-const getQuizCode = async (req, res) => {
+exports.getQuizCode = async (req, res) => {
     try {
         const results = await query(GET_QUIZ_CODE_SQL);
         res.status(200).json(results);
@@ -35,7 +35,7 @@ const getQuizCode = async (req, res) => {
     }
 };
 
-const getUserNamesByQuizCode = async (req, res) => {
+exports.getUserNamesByQuizCode = async (req, res) => {
     const quizCode = req.params.quiz_code;
     try {
         const results = await query(GET_USER_NAMES_BY_QUIZ_CODE_SQL, [quizCode]);
@@ -46,7 +46,7 @@ const getUserNamesByQuizCode = async (req, res) => {
     }
 };
 
-const insertMessage = (req, res) => {
+exports.insertMessage = (req, res) => {
     const { from_user_name, to_user_name, quiz_code, message_body, created_by, modified_by } = req.body;
 
     // Basic validation
@@ -81,16 +81,16 @@ const insertMessage = (req, res) => {
     });
 };
 
-const getMessagesByToUserName = (req, res) => {
-    const toUserName = req.params.to_user_name;
+exports.getMessagesByToUserName = (req, res) => {
+    const userName = req.params.to_user_name;
 
     const sql = `
         SELECT message_body, created_on, created_by, from_user_name, to_user_name
         FROM message_master
-        WHERE to_user_name = ?
+        WHERE to_user_name = ? OR from_user_name = ?
     `;
 
-    con.query(sql, [toUserName], (err, results) => {
+    con.query(sql, [userName, userName], (err, results) => {
         if (err) {
             console.error('Error fetching messages:', err);
             res.status(500).send('Error fetching messages');
@@ -98,12 +98,4 @@ const getMessagesByToUserName = (req, res) => {
             res.status(200).json(results);
         }
     });
-};
-
-module.exports = {
-    setSocketIo,
-    getQuizCode,
-    getUserNamesByQuizCode,
-    insertMessage,
-    getMessagesByToUserName
 };

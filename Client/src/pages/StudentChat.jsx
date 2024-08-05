@@ -35,6 +35,7 @@ function StudentChat() {
   const [currentMessage, setCurrentMessage] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const [unreadMessages, setUnreadMessages] = useState({});
+  
 
   const students = [
     { id: 1, user_name: "STL296", first_name: "Alok", online: true },
@@ -73,7 +74,7 @@ function StudentChat() {
         });
 
         // Update unread messages count for the user if the modal is not open
-        if (!open && to_user_name !== selectedUser?.user_name) {
+        if (!open && toUser !== selectedUser?.user_name) {
           console.log(`Updating unread count for ${fromUser}`);
           setUnreadMessages((prevCounts) => {
             const newCount = (prevCounts[fromUser] || 0) + 1;
@@ -155,7 +156,7 @@ function StudentChat() {
       try {
         await insertMessage({
           from_user_name: selectedUser.user_name,
-          to_user_name: newMessage.recipient,
+          to_user_name: 'examiner',
           quiz_code: "D4DB470E-7CA9-B8FE-040F-FE5F3D3CB510",
           message_body: currentMessage,
           created_by: "student",
@@ -165,7 +166,7 @@ function StudentChat() {
         socket.emit("sendMessage", {
           ...newMessage,
           from_user_name: selectedUser.user_name,
-          to_user_name: newMessage.recipient,
+          to_user_name: 'examiner',
         });
       } catch (error) {
         console.error("Failed to insert message", error);
@@ -242,35 +243,38 @@ function StudentChat() {
               }}
             >
               <Stack spacing={2}>
-                {messages.map((message, index) => (
-                  <Box
-                    key={index}
-                    sx={{
-                      alignSelf: message.sender === "student" ? "flex-end" : "flex-start",
-                      mb: 1,
-                      display: "flex",
-                      flexDirection: "column",
-                    }}
-                  >
+                {messages.map((message, index) => {
+                  console.log("Message:", message); // Log the message to inspect its structure
+                  return (
                     <Box
+                      key={index}
                       sx={{
-                        backgroundColor: message.sender === "student" ? "#D1C4E9" : "#BBDEFB",
-                        color: "black",
-                        p: 1,
-                        borderRadius: 2,
-                        wordWrap: "break-word",
+                        alignSelf: message.sender === "student" ? "flex-end" : "flex-start",
+                        mb: 1,
                         display: "flex",
                         flexDirection: "column",
-                        width: '10rem',
                       }}
                     >
-                      {message.text}
-                      <Typography variant="caption" sx={{ color: "gray", mt: 0.5 }}>
-                        {message.timestamp}
-                      </Typography>
+                      <Box
+                        sx={{
+                          backgroundColor: message.sender === "student" ? "#D1C4E9" : "#BBDEFB",
+                          color: "black",
+                          p: 1,
+                          borderRadius: 2,
+                          wordWrap: "break-word",
+                          display: "flex",
+                          flexDirection: "column",
+                          width: '10rem',
+                        }}
+                      >
+                        {message.text}
+                        <Typography variant="caption" sx={{ color: "gray", mt: 0.5 }}>
+                          {message.timestamp}
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                ))}
+                  );
+                })}
               </Stack>
             </Box>
             <Grid container spacing={2} sx={{ padding: "5px", alignItems: "center" }}>

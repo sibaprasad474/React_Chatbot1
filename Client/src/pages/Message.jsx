@@ -29,7 +29,9 @@ import CloseIcon from "@mui/icons-material/Close";
 import MicIcon from "@mui/icons-material/Mic";
 import ScreenShareIcon from "@mui/icons-material/ScreenShare";
 import SendIcon from "@mui/icons-material/Send";
+import ChatIcon from "@mui/icons-material/Chat";
 import { io } from "socket.io-client";
+import { blue } from "@mui/material/colors";
 import {
   fetchQuizCode,
   fetchUserNamesByQuizCode,
@@ -137,8 +139,8 @@ function Message() {
   };
 
   const handleMessageAll = () => {
-    setSelected(userData.map((user) => user.user_name));
-    setSelectedUser({ user_name: "All Users", first_name: "All Users" });
+    // setSelected(userData.map((user) => user.user_name));
+    // setSelectedUser({ user_name: "All Users", first_name: "All Users" });
     setOpen(true); // Open the modal
   };
 
@@ -151,6 +153,8 @@ function Message() {
     }));
     try {
       const response = await fetchMessagesByToUserName(user.user_name);
+      console.log(response);
+
       setMessages((prevMessages) => ({
         ...prevMessages,
         [user.user_name]: response.data.map((message) => ({
@@ -268,20 +272,27 @@ function Message() {
             </FormControl>
             <Button
               variant="contained"
-              color="primary"
               onClick={handleMessageAll}
-              sx={{ mr: 2 }}
+              sx={{
+                mr: 2,
+                backgroundColor: "green",
+              }}
             >
               Message All
             </Button>
+
             <Button
               variant="contained"
-              color="primary"
+              color={
+                selected.length === userData.length && userData.length > 0
+                  ? "error"
+                  : "warning"
+              }
               onClick={handleSelectAll}
               sx={{ mr: 2 }}
             >
               {selected.length === userData.length && userData.length > 0
-                ? "Deselect All"
+                ? "Remove All"
                 : "Select All"}
             </Button>
           </Box>
@@ -301,48 +312,53 @@ function Message() {
                         onChange={handleSelectAll}
                       />
                     </TableCell>
-                    <TableCell sx={{ color: "white" }}>User</TableCell>
-                    <TableCell sx={{ color: "white" }}>Username</TableCell>
-                    <TableCell sx={{ color: "white" }}>Action</TableCell>
+                    <TableCell sx={{ color: "white", fontSize: "1rem" }}>
+                      User
+                    </TableCell>
+                    <TableCell sx={{ color: "white", fontSize: "1rem" }}>
+                      Username
+                    </TableCell>
+                    <TableCell sx={{ color: "white", fontSize: "1rem" }}>
+                      Action
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {userData.map((user) => (
                     <TableRow key={user.user_name}>
-                      <TableCell>
+                      <TableCell sx={{ fontSize: "1rem" }}>
                         <Checkbox
                           checked={selected.includes(user.user_name)}
                           onChange={() => handleCheckboxChange(user.user_name)}
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell sx={{ fontSize: "1rem" }}>
                         <Tooltip
-                          title={unreadMessages[user.user_name] || 0}
+                          title={`${unreadMessages[user.user_name] || 0}`}
                           arrow
                         >
-                            {user.user_name}
+                          <span>{user.user_name}</span>
                         </Tooltip>
                       </TableCell>
-                      <TableCell>
+                      <TableCell sx={{ fontSize: "1rem" }}>
                         <Tooltip
-                          title={unreadMessages[user.user_name] || 0}
+                          title={`${unreadMessages[user.user_name] || 0}`}
                           arrow
                         >
-                            {user.first_name}
+                          <span>{user.first_name}</span>
                         </Tooltip>
                       </TableCell>
-                      <TableCell>
+                      <TableCell sx={{ fontSize: "1rem" }} align="left">
                         <Badge
                           badgeContent={unreadMessages[user.user_name] || 0}
                           color="error"
                         >
-                          <Button
+                          <IconButton
                             onClick={() => handleOpen(user)}
-                            variant="contained"
-                            color="primary"
+                            color="success"
                           >
-                            Chat
-                          </Button>
+                            <ChatIcon />
+                          </IconButton>
                         </Badge>
                       </TableCell>
                     </TableRow>
@@ -390,7 +406,11 @@ function Message() {
                       <SupportAgentIcon
                         sx={{ verticalAlign: "middle", mr: 1 }}
                       />
-                      <Typography variant="h6" component="span">
+                      <Typography
+                        variant="h6"
+                        component="span"
+                        sx={{ fontSize: "1.25rem" }}
+                      >
                         Chat with{" "}
                         {selectedUser?.user_name === "All Users"
                           ? "All Users"
@@ -443,6 +463,7 @@ function Message() {
                                   wordWrap: "break-word",
                                   display: "flex",
                                   flexDirection: "column",
+                                  fontSize: "1rem", // Increase font size
                                 }}
                               >
                                 {message.message_body}
@@ -458,6 +479,7 @@ function Message() {
                                         ? "whitesmoke"
                                         : "black",
                                     mt: 0.5,
+                                    fontSize: "0.875rem", // Increase font size
                                   }}
                                 >
                                   {formatTimestamp(message.timestamp)}
@@ -475,8 +497,8 @@ function Message() {
                                   message.from_user_name === userType
                                     ? "flex-end"
                                     : "flex-start",
-                                    width: '10rem',
-                                    borderRadius: 2,
+                                width: "10rem",
+                                borderRadius: 2,
                               }}
                             >
                               <Typography
@@ -542,13 +564,14 @@ function Message() {
                         handleSendMessage();
                       }
                     }}
+                    sx={{ fontSize: "1rem" }} // Increase font size
                   />
                   <IconButton>
-                      <MicIcon fontSize="medium" />
-                    </IconButton>
+                    <MicIcon fontSize="medium" />
+                  </IconButton>
                   <IconButton>
-                      <ScreenShareIcon fontSize="medium" />
-                    </IconButton>
+                    <ScreenShareIcon fontSize="medium" />
+                  </IconButton>
                   <IconButton
                     color="primary"
                     onClick={handleSendMessage}
