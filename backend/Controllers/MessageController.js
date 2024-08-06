@@ -121,3 +121,8 @@ exports.getMessagesByToUserName = (req, res) => {
         }
     });
 };
+exports.handleButtonClick = (req, res) => {
+  io.emit('button_clicked', { message: 'The button was clicked by the admin!' });
+
+  res.status(200).send('Event sent to all connected users');
+};

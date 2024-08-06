@@ -91,6 +91,7 @@ function StudentChat() {
     { id: 3, user_name: "STL433", first_name: "Itishree", online: false },
   ];
 
+
   useEffect(() => {
     socket.on("receiveMessage", (message) => {
       const timestamp = message.created_on;
@@ -124,6 +125,9 @@ function StudentChat() {
           });
         }
       }
+    });
+    socket.on('button_clicked', (data) => {
+      alert(data.message);
     });
 
     return () => {

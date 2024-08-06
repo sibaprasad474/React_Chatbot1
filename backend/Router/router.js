@@ -19,6 +19,7 @@ router.get('/user_names/:quiz_code', MessageController.getUserNamesByQuizCode);
 router.post('/insert_message', MessageController.insertMessage);
 
 router.get('/messages/:to_user_name', MessageController.getMessagesByToUserName);
+router.post('/button_click', MessageController.handleButtonClick);
 
 module.exports = {
     router,

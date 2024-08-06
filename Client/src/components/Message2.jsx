@@ -22,6 +22,7 @@ import {
   fetchUserNamesByQuizCode,
   fetchMessagesByToUserName,
   insertMessage,
+  buttonClickEvent,
 } from "../Api";
 import Chatbot2 from './Chatbot2';
 import { io } from "socket.io-client";
@@ -120,6 +121,15 @@ const Message2 = () => {
   const handleChange = (event) => {
     setSelectedExam(event.target.value);
   };
+  const handleMessageAllClick = async () => {
+    try {
+      await buttonClickEvent();
+      alert('Message sent to all users');
+    } catch (error) {
+      console.error("Failed to send message to all users", error);
+      alert('Failed to send message to all users');
+    }
+  };
 
   const handleChatClick = (user) => {
     setSelectedUser(user);
@@ -198,7 +208,7 @@ const Message2 = () => {
                 </TextField>
               </Grid>
               <Grid item lg={3}>
-                <Button variant='contained' sx={{ mt: 1 }} color='info' startIcon={<MessageRounded />}>
+                <Button variant='contained' sx={{ mt: 1 }} onClick={handleMessageAllClick}  color='info' startIcon={<MessageRounded />}>
                   Message All
                 </Button>
               </Grid>
