@@ -4,6 +4,7 @@ import './App.css';
 import BasicAppbar from './components/BasicAppbar';
 import Message from './pages/Message';
 import StudentChat from './pages/StudentChat';
+import Message2 from './components/Message2';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
           <Route path="/message" element={<Message />} />
           <Route path="/studentchat" element={<StudentChat />} />
           <Route path="/" element={<Navigate to="/message" />} />
+          <Route path="/message2" element={<Message2/>} />
         </Routes>
       </Router>
   );

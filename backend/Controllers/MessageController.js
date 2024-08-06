@@ -13,10 +13,32 @@ const GET_QUIZ_CODE_SQL = `
 `;
 
 const GET_USER_NAMES_BY_QUIZ_CODE_SQL = `
-    SELECT *
-    FROM usermaster um
-    JOIN quiz_examinee qe ON um.user_code = qe.examinee_code
-    WHERE qe.quiz_code = ?
+   SELECT
+          B.user_name,
+          CONCAT(COALESCE(B.first_name, ''), ' ', COALESCE(B.middle_name, ''), ' ', COALESCE(B.last_name, '')) AS full_name,
+          C.org_name,
+          D.quiz_name,
+          E.exam_centre_name
+        FROM
+          quiz_examinee A
+        LEFT JOIN
+          usermaster B
+        ON
+          A.examinee_code = B.user_code
+        LEFT JOIN
+          organizationmaster C
+        ON
+          B.org_code = C.org_code
+        LEFT JOIN
+          quizmaster D
+        ON
+          A.quiz_code = D.quiz_code
+        LEFT JOIN
+          exam_centre_master E
+        ON
+          C.org_code = E.org_code
+        WHERE
+          A.quiz_code = ?
 `;
 
 let io;
