@@ -12,5 +12,5 @@ export const insertMessage = (messageData) => API.post('/insert_message', messag
 // New route for fetching messages by username
 export const fetchMessagesByToUserName = (to_user_name) => API.get(`/messages/${to_user_name}`);
 
-export const buttonClickEvent = () => API.post('/button_click');
+export const buttonClickEvent = (data) => API.post('/button_click', data);
 

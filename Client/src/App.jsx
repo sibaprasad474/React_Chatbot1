@@ -13,7 +13,7 @@ function App() {
         <Routes>
           <Route path="/message" element={<Message />} />
           <Route path="/studentchat" element={<StudentChat />} />
-          <Route path="/" element={<Navigate to="/message" />} />
+          <Route path="/" element={<Navigate to="/message2" />} />
           <Route path="/message2" element={<Message2/>} />
         </Routes>
       </Router>

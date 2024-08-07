@@ -26,6 +26,7 @@ import {
 } from "../Api";
 import Chatbot2 from './Chatbot2';
 import { io } from "socket.io-client";
+import SendAllModal from './SendAllModal';
 
 const customStyles = {
   rows: {
@@ -63,6 +64,7 @@ const Message2 = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [loadingUserData, setLoadingUserData] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState({});
+  const [openSendAllModal, setOpenSendAllModal] = useState(false); // State for SendAllModal
 
   const socket = io("http://localhost:8000");
 
@@ -121,14 +123,9 @@ const Message2 = () => {
   const handleChange = (event) => {
     setSelectedExam(event.target.value);
   };
-  const handleMessageAllClick = async () => {
-    try {
-      await buttonClickEvent();
-      alert('Message sent to all users');
-    } catch (error) {
-      console.error("Failed to send message to all users", error);
-      alert('Failed to send message to all users');
-    }
+
+  const handleMessageAllClick = () => {
+    setOpenSendAllModal(true); // Open SendAllModal
   };
 
   const handleChatClick = (user) => {
@@ -142,6 +139,10 @@ const Message2 = () => {
 
   const handleCloseModal = () => {
     setOpenModal(false);
+  };
+
+  const handleCloseSendAllModal = () => {
+    setOpenSendAllModal(false); // Close SendAllModal
   };
 
   const columns = [
@@ -208,7 +209,7 @@ const Message2 = () => {
                 </TextField>
               </Grid>
               <Grid item lg={3}>
-                <Button variant='contained' sx={{ mt: 1 }} onClick={handleMessageAllClick}  color='info' startIcon={<MessageRounded />}>
+                <Button variant='contained' sx={{ mt: 1 }} onClick={handleMessageAllClick} color='info' startIcon={<MessageRounded />}>
                   Message All
                 </Button>
               </Grid>
@@ -229,6 +230,7 @@ const Message2 = () => {
           </Card>
 
           <Chatbot2 openModal={openModal} handleCloseModal={handleCloseModal} selectedUser={selectedUser} />
+          <SendAllModal open={openSendAllModal} handleClose={handleCloseSendAllModal} /> {/* Add SendAllModal */}
         </Box>
       </Box>
     </>
