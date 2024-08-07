@@ -5,7 +5,6 @@ import {
   IconButton,
   Paper,
   Modal,
-  Tooltip,
   Stack,
   Box,
   Badge,
@@ -17,45 +16,44 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Snackbar,
+  Alert,
 } from "@mui/material";
-import SupportAgentIcon from "@mui/icons-material/SupportAgent";
 import CloseIcon from "@mui/icons-material/Close";
-import MicIcon from "@mui/icons-material/Mic";
-import ScreenShareIcon from "@mui/icons-material/ScreenShare";
 import SendIcon from "@mui/icons-material/Send";
 import ChatIcon from "@mui/icons-material/Chat";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import { insertMessage, fetchMessagesByToUserName } from "../Api";
 import { io } from "socket.io-client";
-import wp_bg from '../assets/images/wp_bg.jpg'
+import wp_bg from "../assets/images/wp_bg.jpg";
 
 const socket = io("http://localhost:8000");
 
 const modalStyle = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
   width: 500,
   boxShadow: 24,
   height: 400,
-  display: 'flex',
-  flexDirection: 'column',
-  backgroundColor: 'white',
+  display: "flex",
+  flexDirection: "column",
+  backgroundColor: "white",
 };
 
 const footerStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  padding: '10px',
+  display: "flex",
+  alignItems: "center",
+  padding: "10px",
 };
 
 const chatBoxStyle = {
   flexGrow: 1,
   p: 1,
-  overflowY: 'auto',
-  color: 'white',
+  overflowY: "auto",
+  color: "white",
   backgroundImage: `url(${wp_bg})`,
 };
 
@@ -64,19 +62,32 @@ const messageStyle = {
   borderRadius: "10px 0px 10px 10px",
   maxWidth: "55%",
   boxShadow: "2px solid #6E6E6E",
-  position: 'relative',
+  position: "relative",
   mb: 2,
-  wordWrap: 'break-word',
-  display: 'block',
+  wordWrap: "break-word",
+  display: "block",
 };
 
 const timeStampStyle = {
-  display: 'flex',
-  alignItems: 'center',
+  display: "flex",
+  alignItems: "center",
   color: "#616161",
   fontSize: "12px",
   mt: 0.5,
 };
+const darkWarningStyles = {
+  width: 'auto',
+  maxWidth: '500px',
+  height: 'auto',
+  padding: '16px',
+  borderRadius: '8px',
+  backgroundColor: '#FF6F00', // Darker orange color
+  color: '#FFF', // Text color
+  '& .MuiAlert-icon': {
+    color: '#FFF', // Icon color
+  },
+};
+
 
 function StudentChat() {
   const [open, setOpen] = useState(false);
@@ -84,13 +95,14 @@ function StudentChat() {
   const [currentMessage, setCurrentMessage] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const [unreadMessages, setUnreadMessages] = useState({});
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
 
   const students = [
     { id: 1, user_name: "STL296", first_name: "Alok", online: true },
     { id: 2, user_name: "STL173", first_name: "Sridhar", online: true },
     { id: 3, user_name: "STL433", first_name: "Itishree", online: false },
   ];
-
 
   useEffect(() => {
     socket.on("receiveMessage", (message) => {
@@ -107,7 +119,9 @@ function StudentChat() {
 
         setMessages((prevMessages) => {
           const existingMessage = prevMessages.find(
-            (msg) => msg.text === newMessage.text && msg.timestamp === newMessage.timestamp
+            (msg) =>
+              msg.text === newMessage.text &&
+              msg.timestamp === newMessage.timestamp
           );
           if (!existingMessage) {
             return [...prevMessages, newMessage];
@@ -126,12 +140,15 @@ function StudentChat() {
         }
       }
     });
-    socket.on('button_clicked', (data) => {
-      alert(data.message);
+
+    socket.on("button_clicked", (data) => {
+      setSnackbarMessage(data.message);
+      setSnackbarOpen(true);
     });
 
     return () => {
       socket.off("receiveMessage");
+      socket.off("button_clicked");
     };
   }, [open, selectedUser]);
 
@@ -145,7 +162,8 @@ function StudentChat() {
       setMessages(
         response.data.map((message) => ({
           text: message.message_body,
-          sender: message.from_user_name === user.user_name ? "student" : "other",
+          sender:
+            message.from_user_name === user.user_name ? "student" : "other",
           timestamp: formatTimestamp(message.created_on),
         }))
       );
@@ -194,7 +212,7 @@ function StudentChat() {
       try {
         await insertMessage({
           from_user_name: selectedUser.user_name,
-          to_user_name: 'examiner',
+          to_user_name: "examiner",
           quiz_code: "D4DB470E-7CA9-B8FE-040F-FE5F3D3CB510",
           message_body: currentMessage,
           created_by: "student",
@@ -204,7 +222,7 @@ function StudentChat() {
         socket.emit("sendMessage", {
           ...newMessage,
           from_user_name: selectedUser.user_name,
-          to_user_name: 'examiner',
+          to_user_name: "examiner",
         });
       } catch (error) {
         console.error("Failed to insert message", error);
@@ -212,6 +230,10 @@ function StudentChat() {
     } else {
       console.error("Message cannot be empty or no user selected");
     }
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
   };
 
   return (
@@ -226,23 +248,41 @@ function StudentChat() {
         flexDirection: "column",
       }}
     >
-      <TableContainer component={Paper} sx={{ mt: 2, flexGrow: 1, overflowY: "auto" }}>
+      <TableContainer
+        component={Paper}
+        sx={{ mt: 2, flexGrow: 1, overflowY: "auto" }}
+      >
         <Table stickyHeader>
           <TableHead>
             <TableRow sx={{ backgroundColor: "#3c8dbc" }}>
-              <TableCell sx={{ color: "white", fontWeight: "bold" }}>User Name</TableCell>
-              <TableCell sx={{ color: "white", fontWeight: "bold" }}>Name</TableCell>
-              <TableCell sx={{ color: "white", fontWeight: "bold" }}>Action</TableCell>
+              <TableCell sx={{ color: "white", fontWeight: "bold" }}>
+                User Name
+              </TableCell>
+              <TableCell sx={{ color: "white", fontWeight: "bold" }}>
+                Name
+              </TableCell>
+              <TableCell sx={{ color: "white", fontWeight: "bold" }}>
+                Action
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {students.map((student) => (
-              <TableRow key={student.user_name} onClick={() => handleOpen(student)}>
+              <TableRow
+                key={student.user_name}
+                onClick={() => handleOpen(student)}
+              >
                 <TableCell>{student.user_name}</TableCell>
                 <TableCell>{student.first_name}</TableCell>
                 <TableCell>
-                  <IconButton color="primary" onClick={() => handleOpen(student)}>
-                    <Badge badgeContent={unreadMessages[student.user_name] || 0} color="error">
+                  <IconButton
+                    color="primary"
+                    onClick={() => handleOpen(student)}
+                  >
+                    <Badge
+                      badgeContent={unreadMessages[student.user_name] || 0}
+                      color="error"
+                    >
                       <ChatIcon />
                     </Badge>
                   </IconButton>
@@ -252,9 +292,22 @@ function StudentChat() {
           </TableBody>
         </Table>
       </TableContainer>
-      <Modal open={open} onClose={handleClose} aria-labelledby="modal-title" aria-describedby="modal-description">
+      <Modal
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="modal-title"
+        aria-describedby="modal-description"
+      >
         <Box sx={modalStyle}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: "10px", backgroundColor: "#01579B" }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "10px",
+              backgroundColor: "#01579B",
+            }}
+          >
             <Typography variant="h6" sx={{ color: "white", margin: 0 }}>
               Chat with {selectedUser?.first_name || "Student"}
             </Typography>
@@ -269,18 +322,27 @@ function StudentChat() {
                 key={index}
                 sx={{
                   ...messageStyle,
-                  alignSelf: message.sender === "student" ? "flex-end" : "flex-start",
-                  backgroundColor: message.sender === "student" ? "#C8E6C9" : "#BBDEFB",
-                  borderRadius: message.sender === "student" ? "10px 0px 10px 10px" : "0px 10px 10px 10px",
+                  alignSelf:
+                    message.sender === "student" ? "flex-end" : "flex-start",
+                  backgroundColor:
+                    message.sender === "student" ? "#C8E6C9" : "#BBDEFB",
+                  borderRadius:
+                    message.sender === "student"
+                      ? "10px 0px 10px 10px"
+                      : "0px 10px 10px 10px",
                   marginRight: message.sender === "student" ? "0" : "auto",
                   marginLeft: message.sender === "student" ? "auto" : "0",
                 }}
               >
                 {message.text}
                 <Box sx={timeStampStyle}>
-                  <AccessTimeIcon style={{ fontSize: "12px", marginRight: "4px" }} />
+                  <AccessTimeIcon
+                    style={{ fontSize: "12px", marginRight: "4px" }}
+                  />
                   {message.timestamp}
-                  <DoneAllIcon style={{ fontSize: "12px", marginLeft: "4px" }} />
+                  <DoneAllIcon
+                    style={{ fontSize: "12px", marginLeft: "4px" }}
+                  />
                 </Box>
               </Box>
             ))}
@@ -304,6 +366,20 @@ function StudentChat() {
           </Box>
         </Box>
       </Modal>
+      <Snackbar
+      open={snackbarOpen}
+      autoHideDuration={6000}
+      onClose={handleSnackbarClose}
+      anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+    >
+      <Alert
+        onClose={handleSnackbarClose}
+        severity="warning"
+        sx={darkWarningStyles}
+      >
+        {snackbarMessage}
+      </Alert>
+    </Snackbar>
     </Card>
   );
 }

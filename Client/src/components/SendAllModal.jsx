@@ -11,7 +11,7 @@ export default function SendAllModal({ open, handleClose }) {
   const handleSend = async () => {
     try {
       await buttonClickEvent({ message });
-      alert('Message sent to all users');
+      // alert('Message sent to all users');
       handleClose();
     } catch (error) {
       console.error("Failed to send message to all users", error);
