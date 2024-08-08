@@ -9,7 +9,7 @@ export const fetchQuizCode = () => API.get('/quiz_code');
 export const fetchUserNamesByQuizCode = (quiz_code) => API.post('/user_names', { quiz_code });
 
 // Insert Message (no change needed as it already sends data in the body)
-export const insertMessage = (messageData) => API.post('/insert_message', messageData);
+export const insertMessage = (request) => API.post('/insert_message', request);
 
 // Fetch Messages by To User Name (using POST and sending to_user_name in the request body)
 export const fetchMessagesByToUserName = (to_user_name) => API.post('/messages', { to_user_name });
