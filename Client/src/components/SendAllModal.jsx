@@ -1,17 +1,23 @@
 import * as React from 'react';
 import PropTypes from 'prop-types';
 import { styled } from '@mui/system';
-import { Modal as BaseModal, Backdrop, Button, TextField } from '@mui/material';
-import { useSpring, animated } from '@react-spring/web';
+import { Modal, Backdrop, Button, TextField, Divider, Typography, IconButton, Box } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import SendIcon from '@mui/icons-material/Send';
+import { useSpring, animated } from '@react-spring/web'; // Import useSpring
 import { buttonClickEvent } from "../Api";
 
-export default function SendAllModal({ open, handleClose }) {
+export default function SendAllModal({ open, handleClose, examineeList }) {
+  const [messageTitle, setMessageTitle] = React.useState("");
   const [message, setMessage] = React.useState("");
 
   const handleSend = async () => {
     try {
-      await buttonClickEvent({ message });
-      // alert('Message sent to all users');
+      const users = examineeList.map(examinee => examinee.user_name);
+      console.log(users);
+      
+      await buttonClickEvent({ messageTitle, message});
+      
       handleClose();
     } catch (error) {
       console.error("Failed to send message to all users", error);
@@ -20,40 +26,70 @@ export default function SendAllModal({ open, handleClose }) {
   };
 
   return (
-    <div>
-      <Modal
-        aria-labelledby="spring-modal-title"
-        aria-describedby="spring-modal-description"
-        open={open}
-        onClose={handleClose}
-        closeAfterTransition
-        BackdropComponent={StyledBackdrop}
-      >
-        <Fade in={open}>
-          <ModalContent>
+    <CustomModal
+      aria-labelledby="message-all-modal-title"
+      aria-describedby="message-all-modal-description"
+      open={open}
+      onClose={handleClose}
+      closeAfterTransition
+      BackdropComponent={StyledBackdrop}
+    >
+      <Fade in={open}>
+        <ModalContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: "10px", backgroundColor: "#01579B" }}>
+            <Typography variant="h6" sx={{ color: "white", margin: 0 }}>
+              Message All Examinee
+            </Typography>
+            <IconButton onClick={handleClose}>
+              <CloseIcon style={{ color: "white" }} />
+            </IconButton>
+          </Box>
+          <Divider />
+          <Box sx={{ flexGrow: 1, p: 1, minHeight: 200 }}>
             <TextField
-              id="spring-modal-description"
-              label="Enter message"
-              variant="outlined"
+              label="Message Title"
               fullWidth
               margin="normal"
+              value={messageTitle}
+              onChange={(e) => setMessageTitle(e.target.value)}
+            />
+            <TextField
+              id="message-box"
+              label="Message"
+              placeholder='Type your message here...'
+              multiline
+              rows={4}
+              fullWidth
+              variant="outlined"
+              sx={{ height: 100, mt: 1 }}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
             />
-            <Button onClick={handleSend}>Send</Button>
-          </ModalContent>
-        </Fade>
-      </Modal>
-    </div>
+          </Box>
+          <Divider />
+          <Button
+            sx={{ float: "right", m: 2, width: '30%', ml: 35 }}
+            variant='contained'
+            color='info'
+            endIcon={<SendIcon />}
+            fontSize='small'
+            onClick={handleSend}
+          >
+            Send
+          </Button>
+        </ModalContent>
+      </Fade>
+    </CustomModal>
   );
 }
 
 SendAllModal.propTypes = {
   open: PropTypes.bool.isRequired,
   handleClose: PropTypes.func.isRequired,
+  examineeList: PropTypes.array.isRequired,
 };
 
-const Modal = styled(BaseModal)`
+const CustomModal = styled(Modal)`
   position: fixed;
   z-index: 1300;
   inset: 0;
@@ -106,7 +142,6 @@ const ModalContent = styled('div')`
   flex-direction: column;
   gap: 8px;
   background-color: #fff;
-  padding: 24px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgb(0 0 0 / 0.2);
 `;

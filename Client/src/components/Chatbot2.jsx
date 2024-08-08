@@ -75,25 +75,31 @@ const Chatbot2 = ({ openModal, handleCloseModal, selectedUser }) => {
   const [messages, setMessages] = useState([]);
   const [currentMessage, setCurrentMessage] = useState("");
 
+  // Global variable for concatenated user name and code
+  const userCode = `${selectedUser?.user_name}${selectedUser?.user_code}`;
+
   useEffect(() => {
     if (openModal && selectedUser) {
+      // Fetch initial messages
       fetchMessages();
+
+      // Set up socket listener
+      socket.on("receiveMessage", (message) => {
+        if (message.to_user_name === userCode || message.to_user_name === "All Users") {
+          setMessages((prevMessages) => [...prevMessages, formatMessage(message)]);
+        }
+      });
+
+      // Clean up socket listener on unmount or modal close
+      return () => {
+        socket.off("receiveMessage");
+      };
     }
-
-    socket.on("receiveMessage", (message) => {
-      if (message.to_user_name === selectedUser?.user_name || message.to_user_name === "All Users") {
-        setMessages((prevMessages) => [...prevMessages, formatMessage(message)]);
-      }
-    });
-
-    return () => {
-      socket.off("receiveMessage");
-    };
   }, [openModal, selectedUser, messages]);
 
   const fetchMessages = async () => {
     try {
-      const response = await fetchMessagesByToUserName(selectedUser.user_name);
+      const response = await fetchMessagesByToUserName(userCode);
       setMessages(response.data.map(formatMessage));
     } catch (error) {
       console.error("Failed to fetch messages", error);
@@ -102,7 +108,7 @@ const Chatbot2 = ({ openModal, handleCloseModal, selectedUser }) => {
 
   const formatMessage = (message) => ({
     text: message.message_body,
-    sender: message.from_user_name === selectedUser.user_name ? "student" : "examiner",
+    sender: message.from_user_name === userCode ? "student" : "examiner",
     timestamp: formatTimestamp(message.created_on),
   });
 
@@ -118,7 +124,7 @@ const Chatbot2 = ({ openModal, handleCloseModal, selectedUser }) => {
       const newMessage = {
         text: currentMessage,
         sender: "examiner",
-        recipient: selectedUser.user_name,
+        recipient: userCode,
         timestamp: new Date().toISOString(),
       };
 
@@ -128,7 +134,7 @@ const Chatbot2 = ({ openModal, handleCloseModal, selectedUser }) => {
       try {
         await insertMessage({
           from_user_name: 'examiner',
-          to_user_name: selectedUser.user_name,
+          to_user_name: userCode,
           quiz_code: "D4DB470E-7CA9-B8FE-040F-FE5F3D3CB510",
           message_body: currentMessage,
           created_by: "examiner",
@@ -138,7 +144,7 @@ const Chatbot2 = ({ openModal, handleCloseModal, selectedUser }) => {
         socket.emit("sendMessage", {
           ...newMessage,
           from_user_name: 'examiner',
-          to_user_name: selectedUser.user_name,
+          to_user_name: userCode,
         });
       } catch (error) {
         console.error("Failed to insert message", error);
@@ -171,11 +177,16 @@ const Chatbot2 = ({ openModal, handleCloseModal, selectedUser }) => {
               key={index}
               sx={{
                 ...messageStyle,
-                alignSelf: message.sender === "student" ? "flex-end" : "flex-start",
-                backgroundColor: message.sender === "student" ? "#C8E6C9" : "#BBDEFB",
-                borderRadius: message.sender === "student" ? "10px 0px 10px 10px" : "0px 10px 10px 10px",
-                marginRight: message.sender === "student" ? "0" : "auto",
-                marginLeft: message.sender === "student" ? "auto" : "0",
+                alignSelf:
+                  message.sender === "examiner" ? "flex-end" : "flex-start",
+                backgroundColor:
+                  message.sender === "examiner" ? "#d6d6d6" : "#BBDEFB",
+                borderRadius:
+                  message.sender === "examiner"
+                    ? "10px 0px 10px 10px"
+                    : "0px 10px 10px 10px",
+                marginRight: message.sender === "examiner" ? "0" : "auto",
+                marginLeft: message.sender === "examiner" ? "auto" : "0",
               }}
             >
               {message.text}

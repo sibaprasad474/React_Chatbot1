@@ -1,18 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Toolbar,
-  Typography,
   Box,
   CssBaseline,
-  Divider,
   Card,
   Grid,
   TextField,
   MenuItem,
   Button,
-  IconButton,
-  Badge,
-  InputBase
+  Badge
 } from "@mui/material";
 import { MessageRounded } from '@mui/icons-material';
 import DataTable from "react-data-table-component";
@@ -20,7 +15,6 @@ import ChatIcon from '@mui/icons-material/Chat';
 import {
   fetchQuizCode,
   fetchUserNamesByQuizCode,
-  fetchMessagesByToUserName,
   insertMessage,
   buttonClickEvent,
 } from "../Api";
@@ -129,8 +123,16 @@ const Message2 = () => {
   };
 
   const handleChatClick = (user) => {
-    setSelectedUser(user);
+    const orgCode = user.org_code; // Example: "STLIND"
+    const extractedPart = orgCode.substring(3); // Extracts "IND" from "STLIND"
+    const newUserCode = `${extractedPart}`;
+
+    setSelectedUser({
+      ...user,
+      user_code: newUserCode,
+    });
     setOpenModal(true);
+
     setUnreadMessages((prevCounts) => ({
       ...prevCounts,
       [user.user_name]: 0,
@@ -153,7 +155,14 @@ const Message2 = () => {
     },
     {
       name: "Examinee User Name",
-      selector: (row) => (<p style={{ fontSize: "16px" }}>{row.user_name}</p>),
+      selector: (row) => {
+        const extractedPart = row.org_code.substring(3); // Extract user code part
+        return (
+          <p style={{ fontSize: "16px" }}>
+            {row.user_name}
+          </p>
+        );
+      },
       sortable: true,
     },
     {
@@ -230,7 +239,7 @@ const Message2 = () => {
           </Card>
 
           <Chatbot2 openModal={openModal} handleCloseModal={handleCloseModal} selectedUser={selectedUser} />
-          <SendAllModal open={openSendAllModal} handleClose={handleCloseSendAllModal} /> {/* Add SendAllModal */}
+          <SendAllModal open={openSendAllModal} handleClose={handleCloseSendAllModal} examineeList={examineeList} />
         </Box>
       </Box>
     </>

@@ -88,7 +88,6 @@ const darkWarningStyles = {
   },
 };
 
-
 function StudentChat() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -96,12 +95,12 @@ function StudentChat() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [unreadMessages, setUnreadMessages] = useState({});
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarMessage, setSnackbarMessage] = useState({ title: '', message: '' });
 
   const students = [
-    { id: 1, user_name: "STL296", first_name: "Alok", online: true },
-    { id: 2, user_name: "STL173", first_name: "Sridhar", online: true },
-    { id: 3, user_name: "STL433", first_name: "Itishree", online: false },
+    { id: 1, user_name: "STL296IND", first_name: "Alok", online: true },
+    { id: 2, user_name: "STL173IND", first_name: "Sridhar", online: true },
+    { id: 3, user_name: "STL433IND", first_name: "Itishree", online: false },
   ];
 
   useEffect(() => {
@@ -142,7 +141,8 @@ function StudentChat() {
     });
 
     socket.on("button_clicked", (data) => {
-      setSnackbarMessage(data.message);
+      console.log(data);
+      setSnackbarMessage({ title: data.messageTitle, message: data.message });
       setSnackbarOpen(true);
     });
 
@@ -367,19 +367,20 @@ function StudentChat() {
         </Box>
       </Modal>
       <Snackbar
-      open={snackbarOpen}
-      autoHideDuration={6000}
-      onClose={handleSnackbarClose}
-      anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-    >
-      <Alert
+        open={snackbarOpen}
+        autoHideDuration={6000}
         onClose={handleSnackbarClose}
-        severity="warning"
-        sx={darkWarningStyles}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        {snackbarMessage}
-      </Alert>
-    </Snackbar>
+        <Alert
+          onClose={handleSnackbarClose}
+          severity="warning"
+          sx={darkWarningStyles}
+        >
+          {snackbarMessage.title}
+          <p>{snackbarMessage.message}</p>
+        </Alert>
+      </Snackbar>
     </Card>
   );
 }
