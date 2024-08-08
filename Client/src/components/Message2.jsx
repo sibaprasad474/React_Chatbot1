@@ -123,6 +123,7 @@ const Message2 = () => {
   };
 
   const handleChatClick = (user) => {
+    setUnreadMessages(0);
     const orgCode = user.org_code; // Example: "STLIND"
     const extractedPart = orgCode.substring(3); // Extracts "IND" from "STLIND"
     const newUserCode = `${extractedPart}`;
@@ -179,7 +180,7 @@ const Message2 = () => {
           color="success"
           onClick={() => handleChatClick(row)}
           endIcon={
-            <Badge badgeContent={unreadMessages[row.user_name] || 0} color="error">
+            <Badge badgeContent={unreadMessages[`${row.user_name}IND`] || 0} color="error">
               <ChatIcon />
             </Badge>
           }
