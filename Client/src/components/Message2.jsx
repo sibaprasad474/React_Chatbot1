@@ -22,6 +22,7 @@ import Chatbot2 from './Chatbot2';
 import { io } from "socket.io-client";
 import SendAllModal from './SendAllModal';
 
+
 const customStyles = {
   rows: {
     style: {
@@ -46,6 +47,41 @@ const customStyles = {
       paddingBottom: "5px",
     },
   },
+};
+
+// Hardcoded sessionData for examiner
+const sessionData = {
+  "status": 200,
+  "message": "Session data fetched successsfully.",
+  "result": {
+      "cookie": {
+          "originalMaxAge": 216000000,
+          "expires": "2024-08-14T22:51:02.081Z",
+          "secure": false,
+          "httpOnly": false,
+          "path": "/"
+      },
+      "userName": "EXAMINER",
+      "userCode": "EXAMINERSTLIND",
+      "roleCode": "EXAMINER",
+      "firstName": "Exam",
+      "lastName": "Controller",
+      "email": "examiner@stl.com",
+      "phoneNumber": "0000000000",
+      "profileImageUrl": "profile.png",
+      "cat1": null,
+      "cat2": null,
+      "logoUrl": "STLIND.jpg",
+      "orgCode": "STLIND",
+      "orgName": "Silicon Techlab Pvt. Ltd.",
+      "cat1Text": "Position",
+      "cat2Text": "Year",
+      "topicText": "Topic",
+      "examineeText": "Employee ID",
+      "quizText": "Exam",
+      "examCentreCode": "STLIND",
+      "exaCentreName": "Silicon Techlab Pvt. Ltd."
+  }
 };
 
 const drawerWidth = 200;
@@ -123,29 +159,37 @@ const Message2 = () => {
   };
 
   const handleChatClick = (user) => {
+    if (!user || !user.user_name) {
+      console.error("Selected user is not defined");
+      return;
+    }
+  
     setUnreadMessages(0);
-    const orgCode = user.org_code; // Example: "STLIND"
-    const extractedPart = orgCode.substring(3); // Extracts "IND" from "STLIND"
-    const newUserCode = `${extractedPart}`;
-
+  
+    const senderOrgCode = sessionData.result.userCode;
+    const receiverOrgCode = `${user.user_name}${sessionData.result.orgCode}`;
+  
     setSelectedUser({
       ...user,
-      user_code: newUserCode,
+      user_code: receiverOrgCode, 
     });
+  
     setOpenModal(true);
-
+  
     setUnreadMessages((prevCounts) => ({
       ...prevCounts,
       [user.user_name]: 0,
     }));
   };
+  
+  
 
   const handleCloseModal = () => {
     setOpenModal(false);
   };
 
   const handleCloseSendAllModal = () => {
-    setOpenSendAllModal(false); // Close SendAllModal
+    setOpenSendAllModal(false); 
   };
 
   const columns = [
@@ -156,14 +200,9 @@ const Message2 = () => {
     },
     {
       name: "Examinee User Name",
-      selector: (row) => {
-        const extractedPart = row.org_code.substring(3); // Extract user code part
-        return (
-          <p style={{ fontSize: "16px" }}>
-            {row.user_name}
-          </p>
-        );
-      },
+      selector: (row) => (
+        <p style={{ fontSize: "16px" }}>{row.user_name}</p>
+      ),
       sortable: true,
     },
     {
@@ -180,7 +219,7 @@ const Message2 = () => {
           color="success"
           onClick={() => handleChatClick(row)}
           endIcon={
-            <Badge badgeContent={unreadMessages[`${row.user_name}IND`] || 0} color="error">
+            <Badge badgeContent={unreadMessages[row.user_name] || 0} color="error">
               <ChatIcon />
             </Badge>
           }

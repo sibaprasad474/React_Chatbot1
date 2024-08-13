@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   Box,
@@ -6,50 +6,79 @@ import {
   Typography,
   IconButton,
   InputBase,
-  Button
+  Button,
 } from "@mui/material";
-import CloseIcon from '@mui/icons-material/Close';
-import SendIcon from '@mui/icons-material/Send';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import DoneAllIcon from '@mui/icons-material/DoneAll';
+import CloseIcon from "@mui/icons-material/Close";
+import SendIcon from "@mui/icons-material/Send";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import DoneAllIcon from "@mui/icons-material/DoneAll";
 import wp_bg from "../assets/images/wp_bg.jpg";
-import {
-  fetchMessagesByToUserName,
-  insertMessage,
-} from "../Api";
+import { fetchMessagesByToUserName, insertMessage } from "../Api";
 import { io } from "socket.io-client";
 
 const socket = io("http://localhost:8000");
-
+const sessionData = {
+  "status": 200,
+  "message": "Session data fetched successsfully.",
+  "result": {
+      "cookie": {
+          "originalMaxAge": 216000000,
+          "expires": "2024-08-14T22:51:02.081Z",
+          "secure": false,
+          "httpOnly": false,
+          "path": "/"
+      },
+      "userName": "EXAMINER",
+      "userCode": "EXAMINERSTLIND",
+      "roleCode": "EXAMINER",
+      "firstName": "Exam",
+      "lastName": "Controller",
+      "email": "examiner@stl.com",
+      "phoneNumber": "0000000000",
+      "profileImageUrl": "profile.png",
+      "cat1": null,
+      "cat2": null,
+      "logoUrl": "STLIND.jpg",
+      "orgCode": "STLIND",
+      "orgName": "Silicon Techlab Pvt. Ltd.",
+      "cat1Text": "Position",
+      "cat2Text": "Year",
+      "topicText": "Topic",
+      "examineeText": "Employee ID",
+      "quizText": "Exam",
+      "examCentreCode": "STLIND",
+      "exaCentreName": "Silicon Techlab Pvt. Ltd."
+  }
+};
 const modalStyle = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
   width: 500,
   boxShadow: 24,
   height: 400,
-  display: 'flex',
-  flexDirection: 'column',
-  backgroundColor: 'white',
+  display: "flex",
+  flexDirection: "column",
+  backgroundColor: "white",
 };
 
 const footerStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  padding: '10px',
+  display: "flex",
+  alignItems: "center",
+  padding: "10px",
 };
 
 const chatBoxStyle = {
   flexGrow: 1,
   p: 1,
-  overflowY: 'auto',
-  color: 'white',
+  overflowY: "auto",
+  color: "white",
   backgroundImage: `url(${wp_bg})`,
-  backgroundSize: 'cover',
-  backgroundRepeat: 'no-repeat',
-  backgroundPosition: 'center',
-  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  backgroundSize: "cover",
+  backgroundRepeat: "no-repeat",
+  backgroundPosition: "center",
+  backgroundColor: "rgba(0, 0, 0, 0.7)",
 };
 
 const messageStyle = {
@@ -57,15 +86,15 @@ const messageStyle = {
   borderRadius: "10px 0px 10px 10px",
   maxWidth: "55%",
   boxShadow: "2px solid #6E6E6E",
-  position: 'relative',
+  position: "relative",
   mb: 2,
-  wordWrap: 'break-word',
-  display: 'block',
+  wordWrap: "break-word",
+  display: "block",
 };
 
 const timeStampStyle = {
-  display: 'flex',
-  alignItems: 'center',
+  display: "flex",
+  alignItems: "center",
   color: "#616161",
   fontSize: "12px",
   mt: 0.5,
@@ -75,31 +104,35 @@ const Chatbot2 = ({ openModal, handleCloseModal, selectedUser }) => {
   const [messages, setMessages] = useState([]);
   const [currentMessage, setCurrentMessage] = useState("");
 
-  // Global variable for concatenated user name and code
-  const userCode = `${selectedUser?.user_name}${selectedUser?.user_code}`;
+  const senderOrgCode = sessionData.result.userCode;
+
+  const receiverOrgCode = selectedUser?.user_code; 
 
   useEffect(() => {
     if (openModal && selectedUser) {
-      // Fetch initial messages
       fetchMessages();
 
-      // Set up socket listener
       socket.on("receiveMessage", (message) => {
-        if (message.to_user_name === userCode || message.to_user_name === "All Users") {
-          setMessages((prevMessages) => [...prevMessages, formatMessage(message)]);
+        if (
+          message.to_user_name === receiverOrgCode ||
+          message.to_user_name === "All Users"
+        ) {
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            formatMessage(message),
+          ]);
         }
       });
 
-      // Clean up socket listener on unmount or modal close
       return () => {
         socket.off("receiveMessage");
       };
     }
-  }, [openModal, selectedUser, messages]);
+  }, [openModal, selectedUser]);
 
   const fetchMessages = async () => {
     try {
-      const response = await fetchMessagesByToUserName(userCode);
+      const response = await fetchMessagesByToUserName(receiverOrgCode);
       setMessages(response.data.map(formatMessage));
     } catch (error) {
       console.error("Failed to fetch messages", error);
@@ -108,9 +141,11 @@ const Chatbot2 = ({ openModal, handleCloseModal, selectedUser }) => {
 
   const formatMessage = (message) => ({
     text: message.message_body,
-    sender: message.from_user_name === userCode ? "student" : "examiner",
+    sender: message.from_user_name === senderOrgCode ? "examiner" : "student",
     timestamp: formatTimestamp(message.created_on),
+    to_user_name: message.to_user_name 
   });
+  
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return "No Timestamp";
@@ -123,29 +158,30 @@ const Chatbot2 = ({ openModal, handleCloseModal, selectedUser }) => {
     if (currentMessage.trim() !== "" && selectedUser) {
       const newMessage = {
         text: currentMessage,
-        sender: "examiner",
-        recipient: userCode,
+        sender: sessionData.result.userCode,
+        recipient: `${selectedUser.user_name}${sessionData.result.orgCode}`,
         timestamp: new Date().toISOString(),
       };
-
-      setMessages((prevMessages) => [...prevMessages, formatMessage(newMessage)]);
+  
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        formatMessage(newMessage),
+      ]);
       setCurrentMessage("");
-
+  
+      const requestData = {
+        from_user_name: sessionData.result.userCode,
+        to_user_name: newMessage.recipient,
+        quiz_code: "D4DB470E-7CA9-B8FE-040F-FE5F3D3CB510",
+        message_body: currentMessage,
+        created_by: sessionData.result.userCode,
+        modified_by: sessionData.result.userCode,
+        created_on: newMessage.timestamp,
+      };
+  
       try {
-        await insertMessage({
-          from_user_name: 'examiner',
-          to_user_name: userCode,
-          quiz_code: "D4DB470E-7CA9-B8FE-040F-FE5F3D3CB510",
-          message_body: currentMessage,
-          created_by: "examiner",
-          modified_by: "examiner",
-          created_on: newMessage.timestamp,
-        });
-        socket.emit("sendMessage", {
-          ...newMessage,
-          from_user_name: 'examiner',
-          to_user_name: userCode,
-        });
+        await insertMessage(requestData);
+        socket.emit("sendMessage", requestData);
       } catch (error) {
         console.error("Failed to insert message", error);
       }
@@ -153,7 +189,7 @@ const Chatbot2 = ({ openModal, handleCloseModal, selectedUser }) => {
       console.error("Message cannot be empty or no user selected");
     }
   };
-
+  
   return (
     <Modal
       open={openModal}
@@ -162,7 +198,15 @@ const Chatbot2 = ({ openModal, handleCloseModal, selectedUser }) => {
       aria-describedby="modal-to-show-user-details"
     >
       <Box sx={modalStyle}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: "10px", backgroundColor: "#01579B" }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "10px",
+            backgroundColor: "#01579B",
+          }}
+        >
           <Typography variant="h6" sx={{ color: "white", margin: 0 }}>
             Chat with {selectedUser?.full_name}
           </Typography>
@@ -172,38 +216,51 @@ const Chatbot2 = ({ openModal, handleCloseModal, selectedUser }) => {
         </Box>
         <Divider sx={{ backgroundColor: "white" }} />
         <Box sx={chatBoxStyle}>
-          {messages.map((message, index) => (
-            <Box
-              key={index}
-              sx={{
-                ...messageStyle,
-                alignSelf:
-                  message.sender === "examiner" ? "flex-end" : "flex-start",
-                backgroundColor:
-                  message.sender === "examiner" ? "#d6d6d6" : "#BBDEFB",
-                borderRadius:
-                  message.sender === "examiner"
-                    ? "10px 0px 10px 10px"
-                    : "0px 10px 10px 10px",
-                marginRight: message.sender === "examiner" ? "0" : "auto",
-                marginLeft: message.sender === "examiner" ? "auto" : "0",
-              }}
-            >
-              {message.text}
-              <Box sx={timeStampStyle}>
-                <AccessTimeIcon style={{ fontSize: "12px", marginRight: "4px" }} />
-                {message.timestamp}
-                <DoneAllIcon style={{ fontSize: "12px", marginLeft: "4px" }} />
+          {messages.map((message, index) => {
+            return (
+              <Box
+                key={index}
+                sx={{
+                  ...messageStyle,
+                  alignSelf:
+                    message.to_user_name === "STL681STLIND"
+                      ? "flex-end"
+                      : "flex-start",
+                  backgroundColor:
+                    message.to_user_name === "STL681STLIND"
+                      ? "#d6d6d6"
+                      : "#BBDEFB",
+                  borderRadius:
+                    message.to_user_name === "STL681STLIND"
+                      ? "10px 0px 10px 10px"
+                      : "0px 10px 10px 10px",
+                  marginRight:
+                    message.to_user_name === "STL681STLIND" ? "0" : "auto",
+                  marginLeft:
+                    message.to_user_name === "STL681STLIND" ? "auto" : "0",
+                }}
+              >
+                {message.text}
+                <Box sx={timeStampStyle}>
+                  <AccessTimeIcon
+                    style={{ fontSize: "12px", marginRight: "4px" }}
+                  />
+                  {message.timestamp}
+                  <DoneAllIcon
+                    style={{ fontSize: "12px", marginLeft: "4px" }}
+                  />
+                </Box>
               </Box>
-            </Box>
-          ))}
+            );
+          })}
         </Box>
+
         <Divider sx={{ backgroundColor: "white" }} />
         <Box sx={footerStyle}>
           <InputBase
             sx={{ ml: 1, flex: 1, color: "#6E6E6E" }}
             placeholder="Type a message..."
-            inputProps={{ 'aria-label': 'type a message' }}
+            inputProps={{ "aria-label": "type a message" }}
             value={currentMessage}
             onChange={(e) => setCurrentMessage(e.target.value)}
             onKeyPress={(e) => {
@@ -213,7 +270,7 @@ const Chatbot2 = ({ openModal, handleCloseModal, selectedUser }) => {
             }}
           />
           <Button onClick={handleSendMessage}>
-            <SendIcon color='info' />
+            <SendIcon color="info" />
           </Button>
         </Box>
       </Box>

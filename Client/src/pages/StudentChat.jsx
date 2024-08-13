@@ -30,6 +30,41 @@ import wp_bg from "../assets/images/wp_bg.jpg";
 
 const socket = io("http://localhost:8000");
 
+const sessionData = {
+  status: 200,
+  message: "Session data fetched successsfully.",
+  result: {
+    cookie: {
+      originalMaxAge: 216000000,
+      expires: "2024-08-14T22:38:15.591Z",
+      secure: false,
+      httpOnly: false,
+      path: "/",
+    },
+    userName: "STL681",
+    userCode: "STL681STLIND",
+    roleCode: "EXAMINEE",
+    firstName: "Saubhagya Ranjan",
+    lastName: "Mallick",
+    email: "saubhagya.mallick@silicontechlab.com",
+    phoneNumber: "8984140247",
+    profileImageUrl:
+      "https://tqemscentral.silicontechlab.com/uploads/employee_photo/STL681STLIND/STL681STLIND.jpg",
+    cat1: "Software Engineer",
+    cat2: "2023",
+    logoUrl: "STLIND.jpg",
+    orgCode: "STLIND",
+    orgName: "Silicon Techlab Pvt. Ltd.",
+    cat1Text: "Position",
+    cat2Text: "Year",
+    topicText: "Topic",
+    examineeText: "Employee ID",
+    quizText: "Exam",
+    examCentreCode: "STLIND",
+    exaCentreName: "Silicon Techlab Pvt. Ltd.",
+  },
+};
+
 const modalStyle = {
   position: "absolute",
   top: "50%",
@@ -75,16 +110,17 @@ const timeStampStyle = {
   fontSize: "12px",
   mt: 0.5,
 };
+
 const darkWarningStyles = {
-  width: 'auto',
-  maxWidth: '500px',
-  height: 'auto',
-  padding: '16px',
-  borderRadius: '8px',
-  backgroundColor: '#FF6F00', // Darker orange color
-  color: '#FFF', // Text color
-  '& .MuiAlert-icon': {
-    color: '#FFF', // Icon color
+  width: "auto",
+  maxWidth: "500px",
+  height: "auto",
+  padding: "16px",
+  borderRadius: "8px",
+  backgroundColor: "#FF6F00", // Darker orange color
+  color: "#FFF", // Text color
+  "& .MuiAlert-icon": {
+    color: "#FFF", // Icon color
   },
 };
 
@@ -95,12 +131,19 @@ function StudentChat() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [unreadMessages, setUnreadMessages] = useState({});
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState({ title: '', message: '' });
+  const [snackbarMessage, setSnackbarMessage] = useState({
+    title: "",
+    message: "",
+  });
 
   const students = [
-    { id: 1, user_name: "STL296IND", first_name: "Alok", online: true },
-    { id: 2, user_name: "STL173IND", first_name: "Sridhar", online: true },
-    { id: 3, user_name: "STL433IND", first_name: "Itishree", online: false },
+    {
+      id: 1,
+      user_name: sessionData.result.userCode,
+      first_name: sessionData.result.firstName,
+      online: true,
+    },
+    // Additional students can be added here
   ];
 
   useEffect(() => {
@@ -192,13 +235,16 @@ function StudentChat() {
 
   const handleSendMessage = async () => {
     if (currentMessage.trim() !== "" && selectedUser) {
+      const fromUserName = sessionData.result.userCode; // e.g., "STL681STLIND"
+      const toUserName = "EXAMINERSTLIND"; // The desired "to_user_name"
+  
       const newMessage = {
         text: currentMessage,
-        sender: "student",
-        recipient: selectedUser.user_name,
+        sender: fromUserName,
+        recipient: toUserName,
         timestamp: getCurrentTimestamp(),
       };
-
+  
       setMessages((prevMessages) => [
         ...prevMessages,
         {
@@ -208,21 +254,21 @@ function StudentChat() {
         },
       ]);
       setCurrentMessage("");
-
+  
       try {
         await insertMessage({
-          from_user_name: selectedUser.user_name,
-          to_user_name: "examiner",
+          from_user_name: fromUserName,
+          to_user_name: toUserName,
           quiz_code: "D4DB470E-7CA9-B8FE-040F-FE5F3D3CB510",
           message_body: currentMessage,
-          created_by: "student",
-          modified_by: "student",
+          created_by: fromUserName,
+          modified_by: fromUserName,
           created_on: newMessage.timestamp,
         });
         socket.emit("sendMessage", {
           ...newMessage,
-          from_user_name: selectedUser.user_name,
-          to_user_name: "examiner",
+          from_user_name: fromUserName,
+          to_user_name: toUserName,
         });
       } catch (error) {
         console.error("Failed to insert message", error);
@@ -231,11 +277,11 @@ function StudentChat() {
       console.error("Message cannot be empty or no user selected");
     }
   };
+  
 
   const handleSnackbarClose = () => {
     setSnackbarOpen(false);
   };
-
   return (
     <Card
       sx={{
