@@ -7,7 +7,7 @@ import SendIcon from '@mui/icons-material/Send';
 import { useSpring, animated } from '@react-spring/web'; // Import useSpring
 import { buttonClickEvent } from "../Api";
 
-export default function SendAllModal({ open, handleClose, examineeList }) {
+export default function MessageAllModal({ open, handleClose, examineeList }) {
   const [messageTitle, setMessageTitle] = React.useState("");
   const [message, setMessage] = React.useState("");
 
@@ -83,7 +83,7 @@ export default function SendAllModal({ open, handleClose, examineeList }) {
   );
 }
 
-SendAllModal.propTypes = {
+MessageAllModal.propTypes = {
   open: PropTypes.bool.isRequired,
   handleClose: PropTypes.func.isRequired,
   examineeList: PropTypes.array.isRequired,

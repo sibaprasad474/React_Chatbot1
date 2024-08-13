@@ -100,13 +100,12 @@ const timeStampStyle = {
   mt: 0.5,
 };
 
-const Chatbot2 = ({ openModal, handleCloseModal, selectedUser }) => {
+const ChatModal = ({ openModal, handleCloseModal, selectedUser }) => {
   const [messages, setMessages] = useState([]);
   const [currentMessage, setCurrentMessage] = useState("");
 
   const senderOrgCode = sessionData.result.userCode;
-
-  const receiverOrgCode = selectedUser?.user_code; 
+  const receiverOrgCode = selectedUser?.user_code;
 
   useEffect(() => {
     if (openModal && selectedUser) {
@@ -143,9 +142,8 @@ const Chatbot2 = ({ openModal, handleCloseModal, selectedUser }) => {
     text: message.message_body,
     sender: message.from_user_name === senderOrgCode ? "examiner" : "student",
     timestamp: formatTimestamp(message.created_on),
-    to_user_name: message.to_user_name 
+    to_user_name: message.to_user_name,
   });
-  
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return "No Timestamp";
@@ -156,32 +154,24 @@ const Chatbot2 = ({ openModal, handleCloseModal, selectedUser }) => {
 
   const handleSendMessage = async () => {
     if (currentMessage.trim() !== "" && selectedUser) {
+      const timestamp = new Date().toISOString();
+      const recipient = `${selectedUser.user_name}${sessionData.result.orgCode}`;
       const newMessage = {
-        text: currentMessage,
-        sender: sessionData.result.userCode,
-        recipient: `${selectedUser.user_name}${sessionData.result.orgCode}`,
-        timestamp: new Date().toISOString(),
-      };
-  
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        formatMessage(newMessage),
-      ]);
-      setCurrentMessage("");
-  
-      const requestData = {
         from_user_name: sessionData.result.userCode,
-        to_user_name: newMessage.recipient,
+        to_user_name: recipient,
         quiz_code: "D4DB470E-7CA9-B8FE-040F-FE5F3D3CB510",
         message_body: currentMessage,
         created_by: sessionData.result.userCode,
         modified_by: sessionData.result.userCode,
-        created_on: newMessage.timestamp,
+        created_on: timestamp,
       };
-  
+
       try {
-        await insertMessage(requestData);
-        socket.emit("sendMessage", requestData);
+        await insertMessage(newMessage);
+        socket.emit("sendMessage", newMessage);
+
+        // Remove the manual message addition to avoid duplication
+        setCurrentMessage("");
       } catch (error) {
         console.error("Failed to insert message", error);
       }
@@ -189,7 +179,7 @@ const Chatbot2 = ({ openModal, handleCloseModal, selectedUser }) => {
       console.error("Message cannot be empty or no user selected");
     }
   };
-  
+
   return (
     <Modal
       open={openModal}
@@ -216,43 +206,41 @@ const Chatbot2 = ({ openModal, handleCloseModal, selectedUser }) => {
         </Box>
         <Divider sx={{ backgroundColor: "white" }} />
         <Box sx={chatBoxStyle}>
-          {messages.map((message, index) => {
-            return (
-              <Box
-                key={index}
-                sx={{
-                  ...messageStyle,
-                  alignSelf:
-                    message.to_user_name === "STL681STLIND"
-                      ? "flex-end"
-                      : "flex-start",
-                  backgroundColor:
-                    message.to_user_name === "STL681STLIND"
-                      ? "#d6d6d6"
-                      : "#BBDEFB",
-                  borderRadius:
-                    message.to_user_name === "STL681STLIND"
-                      ? "10px 0px 10px 10px"
-                      : "0px 10px 10px 10px",
-                  marginRight:
-                    message.to_user_name === "STL681STLIND" ? "0" : "auto",
-                  marginLeft:
-                    message.to_user_name === "STL681STLIND" ? "auto" : "0",
-                }}
-              >
-                {message.text}
-                <Box sx={timeStampStyle}>
-                  <AccessTimeIcon
-                    style={{ fontSize: "12px", marginRight: "4px" }}
-                  />
-                  {message.timestamp}
-                  <DoneAllIcon
-                    style={{ fontSize: "12px", marginLeft: "4px" }}
-                  />
-                </Box>
+          {messages.map((message, index) => (
+            <Box
+              key={index}
+              sx={{
+                ...messageStyle,
+                alignSelf:
+                  message.to_user_name === receiverOrgCode
+                    ? "flex-end"
+                    : "flex-start",
+                backgroundColor:
+                  message.to_user_name === receiverOrgCode
+                    ? "#d6d6d6"
+                    : "#BBDEFB",
+                borderRadius:
+                  message.to_user_name === receiverOrgCode
+                    ? "10px 0px 10px 10px"
+                    : "0px 10px 10px 10px",
+                marginRight:
+                  message.to_user_name === receiverOrgCode ? "0" : "auto",
+                marginLeft:
+                  message.to_user_name === receiverOrgCode ? "auto" : "0",
+              }}
+            >
+              {message.text}
+              <Box sx={timeStampStyle}>
+                <AccessTimeIcon
+                  style={{ fontSize: "12px", marginRight: "4px" }}
+                />
+                {message.timestamp}
+                <DoneAllIcon
+                  style={{ fontSize: "12px", marginLeft: "4px" }}
+                />
               </Box>
-            );
-          })}
+            </Box>
+          ))}
         </Box>
 
         <Divider sx={{ backgroundColor: "white" }} />
@@ -277,5 +265,4 @@ const Chatbot2 = ({ openModal, handleCloseModal, selectedUser }) => {
     </Modal>
   );
 };
-
-export default Chatbot2;
+export default ChatModal;

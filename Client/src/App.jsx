@@ -4,7 +4,7 @@ import './App.css';
 import BasicAppbar from './components/BasicAppbar';
 import Message from './pages/Message';
 import StudentChat from './pages/StudentChat';
-import Message2 from './components/Message2';
+// import Message2 from './components/Message2';
 
 function App() {
   return (
@@ -13,8 +13,8 @@ function App() {
         <Routes>
           <Route path="/message" element={<Message />} />
           <Route path="/studentchat" element={<StudentChat />} />
-          <Route path="/" element={<Navigate to="/message2" />} />
-          <Route path="/message2" element={<Message2/>} />
+          <Route path="/" element={<Navigate to="/message" />} />
+          <Route path="/message" element={<Message/>} />
         </Routes>
       </Router>
   );
